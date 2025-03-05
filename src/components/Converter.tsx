@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CurrencyInput from './CurrencyInput';
+import DolarSelector from './DolarSelector';
 import { ArrowsRightLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DolarInfo } from '@/app/lib/fetchDolares';
+import { dolarService } from '@/app/services/dolarService';
 
 interface ConverterProps {
-  dolarMepValue: number;
-  fechaActualizacion: string;
+  initialDolares: DolarInfo[];
 }
 
-export default function Converter({ dolarMepValue, fechaActualizacion }: ConverterProps) {
+export default function Converter({ initialDolares }: ConverterProps) {
+  const [dolares, setDolares] = useState<DolarInfo[]>(initialDolares);
   const [pesosValue, setPesosValue] = useState('');
   const [dolaresValue, setDolaresValue] = useState('');
   const [lastEdited, setLastEdited] = useState<'pesos' | 'dolares'>('pesos');
@@ -19,7 +22,28 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
   const [isAnimating, setIsAnimating] = useState(false);
   const [buttonRotation, setButtonRotation] = useState(0);
 
-  // Cargar la configuración guardada cuando el componente se monta
+  // Estado para el tipo de dólar seleccionado
+  const [selectedDolar, setSelectedDolar] = useState<DolarInfo>(
+    // Default al dólar Blue o al primer elemento si no existe Blue
+    dolares.find(d => d.casa === 'blue' || d.casa === 'bolsa') || dolares[0]
+  );
+
+  const getDolarDisplayName = (dolar: DolarInfo | null | undefined): string => {
+    if (!dolar) return '';
+    return dolar.casa === 'contadoconliqui' ? 'CCL' : dolar.nombre;
+  };
+
+  // Actualizar el selectedDolar cuando cambian los dolares para mantener la misma casa
+  useEffect(() => {
+    if (selectedDolar && dolares.length > 0) {
+      const updatedDolar = dolares.find(d => d.casa === selectedDolar.casa);
+      if (updatedDolar) {
+        setSelectedDolar(updatedDolar);
+      }
+    }
+  }, [dolares]);
+
+  // Cargar configuración guardada
   useEffect(() => {
     try {
       const savedConfig = localStorage.getItem('conversorConfig');
@@ -27,23 +51,32 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
         const config = JSON.parse(savedConfig);
         setIsPesosFirst(config.isPesosFirst);
         setButtonRotation(config.buttonRotation);
+
+        // Recuperar el tipo de dólar seleccionado
+        if (config.selectedDolarCasa) {
+          const savedDolar = dolares.find(d => d.casa === config.selectedDolarCasa);
+          if (savedDolar) {
+            setSelectedDolar(savedDolar);
+          }
+        }
       }
     } catch (error) {
       console.error('Error al cargar la configuración guardada:', error);
     }
-  }, []);
+  }, [dolares]);
 
-  // Guardar configuración cuando cambia
+  // Guardar configuración
   useEffect(() => {
     try {
       localStorage.setItem('conversorConfig', JSON.stringify({
         isPesosFirst,
-        buttonRotation
+        buttonRotation,
+        selectedDolarCasa: selectedDolar?.casa
       }));
     } catch (error) {
       console.error('Error al guardar la configuración:', error);
     }
-  }, [isPesosFirst, buttonRotation]);
+  }, [isPesosFirst, buttonRotation, selectedDolar]);
 
   // Formatea la fecha de actualización
   const formatFecha = (fechaStr: string) => {
@@ -59,26 +92,26 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
 
   // Convierte de pesos a dólares
   const convertPesosToDolares = (pesos: string) => {
-    if (!pesos || isNaN(parseFloat(pesos)) || dolarMepValue <= 0) return '';
-    const result = parseFloat(pesos) / dolarMepValue;
+    if (!pesos || isNaN(parseFloat(pesos)) || !selectedDolar || selectedDolar.venta <= 0) return '';
+    const result = parseFloat(pesos) / selectedDolar.venta;
     return result.toFixed(2);
   };
 
   // Convierte de dólares a pesos
   const convertDolaresToPesos = (dolares: string) => {
-    if (!dolares || isNaN(parseFloat(dolares)) || dolarMepValue <= 0) return '';
-    const result = parseFloat(dolares) * dolarMepValue;
+    if (!dolares || isNaN(parseFloat(dolares)) || !selectedDolar || selectedDolar.venta <= 0) return '';
+    const result = parseFloat(dolares) * selectedDolar.venta;
     return result.toFixed(2);
   };
 
-  // Actualiza los valores cuando cambia un input
+  // Actualiza los valores cuando cambia un input o el tipo de dólar
   useEffect(() => {
     if (lastEdited === 'pesos') {
       setDolaresValue(convertPesosToDolares(pesosValue));
     } else {
       setPesosValue(convertDolaresToPesos(dolaresValue));
     }
-  }, [pesosValue, dolaresValue, lastEdited, dolarMepValue]);
+  }, [pesosValue, dolaresValue, lastEdited, selectedDolar]);
 
   // Intercambia la posición de los inputs con animación mejorada
   const handleSwap = () => {
@@ -96,13 +129,28 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
     }, 500);
   };
 
-  // Simula una actualización de los datos
-  const handleRefresh = () => {
+  // Función para actualizar los datos de dólares (ahora realmente funciona!)
+  const handleRefresh = useCallback(async () => {
+    if (refreshing) return;
+
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  };
+
+    try {
+      // Hacemos una petición forzada para obtener datos frescos
+      const freshData = await dolarService.fetchDolares(true);
+      setDolares(freshData);
+
+      // Mostramos un mensaje de éxito (opcional)
+      console.log('Cotizaciones actualizadas correctamente');
+    } catch (error) {
+      console.error('Error al actualizar las cotizaciones:', error);
+    } finally {
+      // Mantenemos el spinner por al menos 500ms para feedback visual
+      setTimeout(() => {
+        setRefreshing(false);
+      }, 500);
+    }
+  }, [refreshing]);
 
   return (
     <div className="w-full max-w-md">
@@ -112,22 +160,30 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
         transition={{ duration: 0.5 }}
         className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-8 rounded-3xl shadow-2xl border border-emerald-700"
       >
-        <div className="mb-8 text-center">
+        <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-white mb-3">
-            Conversor Dólar MEP
+            Conversor de Dólares
           </h1>
-          <div className="flex justify-center items-center mb-2">
-            <span className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-green-300 to-emerald-500">
-              ${dolarMepValue.toFixed(2)}
-            </span>
-          </div>
-          <div className="flex items-center justify-center gap-2 text-gray-300">
+
+          {/* Selector de tipo de dólar */}
+          {selectedDolar && (
+            <DolarSelector
+              dolares={dolares}
+              selectedDolar={selectedDolar}
+              onSelectDolar={setSelectedDolar}
+            />
+          )}
+
+          <div className="flex items-center justify-center gap-2 text-gray-300 mt-2">
             <span className="text-sm">
-              Actualizado: {formatFecha(fechaActualizacion)}
+              Actualizado: {selectedDolar ? formatFecha(selectedDolar.fechaActualizacion) : ''}
             </span>
             <button
               onClick={handleRefresh}
               className="text-gray-300 hover:text-green-400 transition-colors"
+              disabled={refreshing}
+              aria-label="Actualizar cotizaciones"
+              title="Actualizar cotizaciones"
             >
               <ArrowPathIcon className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
@@ -135,7 +191,7 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
         </div>
 
         {/* Contenedor principal con altura aumentada para más espacio */}
-        <div className="relative" style={{ height: "280px" }}>
+        <div className="relative" style={{ height: "quu280px" }}>
           {/* Inputs con AnimatePresence para manejar la salida */}
           <AnimatePresence mode="popLayout">
             {/* Primer input - posicionado más arriba y con más margen inferior */}
@@ -164,7 +220,7 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
                 />
               ) : (
                 <CurrencyInput
-                  label="Dólares MEP"
+                  label={`Dólares (${getDolarDisplayName(selectedDolar)})`}
                   value={dolaresValue}
                   onChange={(value) => {
                     setDolaresValue(value);
@@ -214,7 +270,7 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
             >
               {isPesosFirst ? (
                 <CurrencyInput
-                  label="Dólares MEP"
+                  label={`Dólares (${getDolarDisplayName(selectedDolar)})`}
                   value={dolaresValue}
                   onChange={(value) => {
                     setDolaresValue(value);
@@ -237,9 +293,6 @@ export default function Converter({ dolarMepValue, fechaActualizacion }: Convert
               )}
             </motion.div>
           </AnimatePresence>
-
-          {/* División visual en el centro para crear espacio para el botón */}
-          <div className="absolute left-0 right-0 top-1/2 transform -translate-y-1/2 h-24 pointer-events-none"></div>
         </div>
       </motion.div>
     </div>
