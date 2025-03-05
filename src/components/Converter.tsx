@@ -191,7 +191,7 @@ export default function Converter({ initialDolares }: ConverterProps) {
         </div>
 
         {/* Contenedor principal con altura aumentada para más espacio */}
-        <div className="relative" style={{ height: "quu280px" }}>
+        <div className="relative" style={{ height: "260px" }}>
           {/* Inputs con AnimatePresence para manejar la salida */}
           <AnimatePresence mode="popLayout">
             {/* Primer input - posicionado más arriba y con más margen inferior */}
@@ -226,7 +226,7 @@ export default function Converter({ initialDolares }: ConverterProps) {
                     setDolaresValue(value);
                     setLastEdited('dolares');
                   }}
-                  symbol="U$D"
+                  symbol="USD"
                   placeholder="0.00"
                 />
               )}
@@ -276,7 +276,7 @@ export default function Converter({ initialDolares }: ConverterProps) {
                     setDolaresValue(value);
                     setLastEdited('dolares');
                   }}
-                  symbol="U$D"
+                  symbol="USD"
                   placeholder="0.00"
                 />
               ) : (
