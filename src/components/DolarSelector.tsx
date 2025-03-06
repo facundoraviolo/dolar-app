@@ -32,15 +32,15 @@ export default function DolarSelector({
   const sortedDolares = [...dolares].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
-    <div className="relative mb-6">
+    <div className="relative mb-2">
       <button
         onClick={toggleDropdown}
         className="w-full flex items-center justify-between px-4 py-3 bg-emerald-800/40 border border-emerald-700 rounded-xl text-white hover:bg-emerald-800/60 transition-colors"
       >
         <div className="flex items-center">
           {/* Aquí usamos el nombre abreviado */}
-          <span className="font-medium">{getDolarDisplayName(selectedDolar)}</span>
-          <span className="ml-2 text-sm text-green-300">${selectedDolar.venta.toFixed(2)}</span>
+          <span className="font-semibold">{getDolarDisplayName(selectedDolar)}</span>
+          <span className="ml-2 text-sm font-light text-green-300">${selectedDolar.venta.toFixed(2)}</span>
         </div>
         <ChevronDownIcon
           className={`w-5 h-5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
@@ -69,8 +69,8 @@ export default function DolarSelector({
                     {/* Aquí usamos el nombre abreviado en la lista desplegable */}
                     <span className="text-white font-medium">{getDolarDisplayName(dolar)}</span>
                     <div className="mt-0.5 text-xs flex space-x-2">
-                      <span className="text-green-300">Compra: ${dolar.compra.toFixed(2)}</span>
-                      <span className="text-green-300">Venta: ${dolar.venta.toFixed(2)}</span>
+                      <span className="text-green-300 font-light">Compra: ${dolar.compra.toFixed(2)}</span>
+                      <span className="text-green-300 font-light">Venta: ${dolar.venta.toFixed(2)}</span>
                     </div>
                   </div>
 

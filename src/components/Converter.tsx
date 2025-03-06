@@ -7,6 +7,10 @@ import { ArrowsRightLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { motion, AnimatePresence } from 'framer-motion';
 import { DolarInfo } from '@/app/lib/fetchDolares';
 import { dolarService } from '@/app/services/dolarService';
+import Image from "next/image";
+import {Bree_Serif} from "next/font/google";
+
+const breeSerif = Bree_Serif({weight: '400', subsets: ['latin'] });
 
 interface ConverterProps {
   initialDolares: DolarInfo[];
@@ -27,11 +31,6 @@ export default function Converter({ initialDolares }: ConverterProps) {
     // Default al dólar Blue o al primer elemento si no existe Blue
     dolares.find(d => d.casa === 'blue' || d.casa === 'bolsa') || dolares[0]
   );
-
-  const getDolarDisplayName = (dolar: DolarInfo | null | undefined): string => {
-    if (!dolar) return '';
-    return dolar.casa === 'contadoconliqui' ? 'CCL' : dolar.nombre;
-  };
 
   // Actualizar el selectedDolar cuando cambian los dolares para mantener la misma casa
   useEffect(() => {
@@ -161,10 +160,12 @@ export default function Converter({ initialDolares }: ConverterProps) {
         className="bg-gradient-to-br from-emerald-800 to-emerald-950 p-8 rounded-3xl shadow-2xl border border-emerald-700"
       >
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-white mb-3">
-            Conversor de Dólares
-          </h1>
-
+          <div className="flex items-center justify-center mb-5">
+            <Image src="/franklin.png" alt="Franklin Logo" width={42} height={42} className="mr-1" />
+            <h1 className={`text-2xl font-bold text-white ${breeSerif.className}`}>
+              Convertilo
+            </h1>
+          </div>
           {/* Selector de tipo de dólar */}
           {selectedDolar && (
             <DolarSelector
@@ -174,7 +175,7 @@ export default function Converter({ initialDolares }: ConverterProps) {
             />
           )}
 
-          <div className="flex items-center justify-center gap-2 text-gray-300 mt-2">
+          <div className="flex items-center justify-center gap-2 text-gray-300 mb-8">
             <span className="text-sm">
               Actualizado: {selectedDolar ? formatFecha(selectedDolar.fechaActualizacion) : ''}
             </span>
@@ -191,7 +192,7 @@ export default function Converter({ initialDolares }: ConverterProps) {
         </div>
 
         {/* Contenedor principal con altura aumentada para más espacio */}
-        <div className="relative" style={{ height: "260px" }}>
+        <div className="relative" style={{ height: "220px" }}>
           {/* Inputs con AnimatePresence para manejar la salida */}
           <AnimatePresence mode="popLayout">
             {/* Primer input - posicionado más arriba y con más margen inferior */}
@@ -209,7 +210,6 @@ export default function Converter({ initialDolares }: ConverterProps) {
             >
               {isPesosFirst ? (
                 <CurrencyInput
-                  label="Pesos Argentinos"
                   value={pesosValue}
                   onChange={(value) => {
                     setPesosValue(value);
@@ -220,7 +220,6 @@ export default function Converter({ initialDolares }: ConverterProps) {
                 />
               ) : (
                 <CurrencyInput
-                  label={`Dólares (${getDolarDisplayName(selectedDolar)})`}
                   value={dolaresValue}
                   onChange={(value) => {
                     setDolaresValue(value);
@@ -270,7 +269,6 @@ export default function Converter({ initialDolares }: ConverterProps) {
             >
               {isPesosFirst ? (
                 <CurrencyInput
-                  label={`Dólares (${getDolarDisplayName(selectedDolar)})`}
                   value={dolaresValue}
                   onChange={(value) => {
                     setDolaresValue(value);
@@ -281,7 +279,6 @@ export default function Converter({ initialDolares }: ConverterProps) {
                 />
               ) : (
                 <CurrencyInput
-                  label="Pesos Argentinos"
                   value={pesosValue}
                   onChange={(value) => {
                     setPesosValue(value);

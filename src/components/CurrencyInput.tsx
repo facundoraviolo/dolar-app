@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 interface CurrencyInputProps {
-  label: string;
   value: string;
   onChange: (value: string) => void;
   symbol: string;
@@ -9,7 +8,6 @@ interface CurrencyInputProps {
 }
 
 export default function CurrencyInput({
-                                        label,
                                         value,
                                         onChange,
                                         symbol,
@@ -29,9 +27,6 @@ export default function CurrencyInput({
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-gray-300 mb-1">
-        {label}
-      </label>
       <div
         className={`
           flex items-center overflow-hidden rounded-xl border bg-emerald-950/30
